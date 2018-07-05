@@ -5,15 +5,16 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using TwitterStreamerApi.Repositories.Interfaces;
 
 namespace TwitterStreamerApi.Controllers
 {
     [Route("api/[controller]")]
     public class AccountsController : Controller
     {
-        private readonly Repositories.IUserDataManager _userDataManager;
+        private readonly IUserDataManager _userDataManager;
 
-        public AccountsController(Repositories.IUserDataManager userDataManager)
+        public AccountsController(IUserDataManager userDataManager)
         {
             _userDataManager = userDataManager;
         }
@@ -39,8 +40,9 @@ namespace TwitterStreamerApi.Controllers
         public IActionResult CreateCredentials([FromBody] string credentials)
         {
             var model = JsonConvert.DeserializeObject<Models.TwitterUserCredentials>(credentials.ToString());
+            _userDataManager.CreateOrUpdateCredentials(model);
 
-            return null;
+            return Ok();
         }
 
         [HttpPatch]
@@ -48,17 +50,19 @@ namespace TwitterStreamerApi.Controllers
         public IActionResult UpdateCredentials(string twitterId, string credentials)
         {
             var model = JsonConvert.DeserializeObject<Models.TwitterUserCredentials>(credentials.ToString());
+            _userDataManager.CreateOrUpdateCredentials(model);
 
-            return null;
+            return Ok();
+
         }
 
         [HttpDelete]
         [Route("credentials")]
         public IActionResult DeleteCredentials(string twitterId)
         {
-            return null;
+            //Delete credentials
+            throw new NotImplementedException();
         }
-
 
         [HttpGet]
         [Route("users/{id}")]

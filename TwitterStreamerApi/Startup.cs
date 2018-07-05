@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using Microsoft.AspNetCore.SignalR;
+using TwitterStreamerApi;
 
 namespace TwitterStreamerApi
 {
@@ -27,10 +28,10 @@ namespace TwitterStreamerApi
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
             services.Configure<Options.ApplicationConfiguration>(Configuration.GetSection(nameof(Options.ApplicationConfiguration)));
             services.Configure<Options.TwitterApiConfiguration>(Configuration.GetSection(nameof(Options.TwitterApiConfiguration)));
-            services.AddTransient<Repositories.ITwitterStreamer, Repositories.TwitterStreamer>();
+            services.AddTransient<Repositories.Interfaces.ITwitterStreamer, Repositories.TwitterStreamer>();
 
             //Change to transient
-            services.AddSingleton<Repositories.IUserDataManager, Repositories.Development.UserDataManager_Dev>();
+            services.AddSingleton<Repositories.Interfaces.IUserDataManager, Repositories.Development.UserDataManager_Dev>();
 
             //Change to specific cors
             services.AddCors(o => o.AddPolicy("GlobalCorsPolicy", builder =>

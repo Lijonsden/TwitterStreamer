@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using TwitterStreamerApi.Models;
+using TwitterStreamerApi.Repositories.Interfaces;
 
 namespace TwitterStreamerApi.Repositories.Development
 {

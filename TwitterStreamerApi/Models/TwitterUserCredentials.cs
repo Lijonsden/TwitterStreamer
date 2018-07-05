@@ -11,6 +11,5 @@ namespace TwitterStreamerApi.Models
         public string AccessToken { get; set; }
         public string AccessTokenSecret { get; set; }
         public DateTime ValidUntil { get; set; }
-
     }
 }

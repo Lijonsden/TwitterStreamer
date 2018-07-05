@@ -26,9 +26,10 @@ namespace TwitterStreamerApi
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddSingleton<IHttpContextAccessor, HttpContextAccessor>();
+            services.AddSingleton<Repositories.TaskManager>();
+            services.AddTransient<Repositories.Interfaces.ITwitterStreamer, Repositories.TwitterStreamer>();
             services.Configure<Options.ApplicationConfiguration>(Configuration.GetSection(nameof(Options.ApplicationConfiguration)));
             services.Configure<Options.TwitterApiConfiguration>(Configuration.GetSection(nameof(Options.TwitterApiConfiguration)));
-            services.AddTransient<Repositories.Interfaces.ITwitterStreamer, Repositories.TwitterStreamer>();
 
             //Change to transient
             services.AddSingleton<Repositories.Interfaces.IUserDataManager, Repositories.Development.UserDataManager_Dev>();

@@ -8,6 +8,12 @@ namespace TwitterStreamerApi.SignalHubs
 {
     public class TwitterStreamerHub : Hub
     {
+        private readonly Repositories.TaskManager _taskManager;
+
+        public TwitterStreamerHub(Repositories.TaskManager taskManager)
+        {
+            _taskManager = taskManager;
+        }
 
         public async Task SendStream(string user, string message)
         {
@@ -28,8 +34,7 @@ namespace TwitterStreamerApi.SignalHubs
 
         public override Task OnDisconnectedAsync(Exception exception)
         {
-            string userIdentifier = "test";
-
+            var success = _taskManager.CancelTask(Context.ConnectionId);
             return base.OnDisconnectedAsync(exception);
         }
     }

@@ -15,56 +15,56 @@ namespace TwitterStreamerApi.Repositories
         private readonly IUserDataManager _userDataManager;
         private readonly IHubContext<SignalHubs.TwitterStreamerHub> _signalRcontext;
         private static List<Models.TwitterUserStreams> userStreams = new List<Models.TwitterUserStreams>();
+        private readonly TaskManager _taskManager;
 
-        public TwitterStreamer(IOptions<Options.ApplicationConfiguration> options, IOptions<Options.TwitterApiConfiguration> twitterConfigurations,
-            IUserDataManager userDataManager, IHubContext<SignalHubs.TwitterStreamerHub> signalRcontext)
+        public TwitterStreamer(IOptions<Options.ApplicationConfiguration> options,
+            IOptions<Options.TwitterApiConfiguration> twitterConfigurations,
+            IUserDataManager userDataManager, IHubContext<SignalHubs.TwitterStreamerHub> signalRcontext,
+            TaskManager taskManager)
         {
             _twitterConfigurations = twitterConfigurations.Value;
             _userDataManager = userDataManager;
             _signalRcontext = signalRcontext;
+            _taskManager = taskManager;
         }
 
-        public async Task<string> StartStreamer(string twitterId, string clientId, string[] tracks)
+        public async Task<bool> StartStreamer(string twitterId, string clientId, string[] tracks)
         {
             var user = await _userDataManager.GetUserData(twitterId);
 
             if (user == null)
-                return null;
+                return false;
 
             var credentials = await _userDataManager.GetUserCredentials(twitterId);
             if (credentials == null/* || credentials.ValidUntil < DateTime.UtcNow*/)
             {
-                //No credentials
             }
 
             //TEMP
             if (tracks == null)
                 tracks = new string[] { "Trump" };
 
-            Models.TwitterUserStreams userStream = userStreams?.SingleOrDefault(o => o.TwitterId == twitterId);
-
-            if (userStream == null)
+            var userStream = new Models.TwitterUserStreams()
             {
-                userStream = new Models.TwitterUserStreams()
+                TwitterId = twitterId,
+                ClientId = clientId,
+                FilteredSteam = Tweetinvi.Stream.CreateFilteredStream(new Tweetinvi.Models.TwitterCredentials()
                 {
-                    TwitterId = twitterId,
-                    ClientId = clientId,
-                };
-            }
+                    AccessToken = credentials.AccessToken,
+                    AccessTokenSecret = credentials.AccessTokenSecret,
+                    ConsumerKey = _twitterConfigurations.ConsumerKey,
+                    ConsumerSecret = _twitterConfigurations.ConsumerSecret,
+                }),
+                ProcessCancellationTokenSource = new CancellationTokenSource(),
+            };
 
-            userStream.FilteredSteam = Tweetinvi.Stream.CreateFilteredStream(new Tweetinvi.Models.TwitterCredentials()
-            {
-                AccessToken = credentials.AccessToken,
-                AccessTokenSecret = credentials.AccessTokenSecret,
-                ConsumerKey = _twitterConfigurations.ConsumerKey,
-                ConsumerSecret = _twitterConfigurations.ConsumerSecret
-            });
+            CancellationToken cancellationToken = userStream.ProcessCancellationTokenSource.Token;
+
+            if (!(await _taskManager.TryAddTask(clientId, userStream.ProcessCancellationTokenSource) == true))
+                return false;
 
             foreach (var track in tracks)
                 userStream.FilteredSteam.AddTrack(track);
-
-            userStream.ProcessCancellationTokenSource = new CancellationTokenSource();
-            CancellationToken cancellationToken = userStream.ProcessCancellationTokenSource.Token;
 
             var newTask = Task.Run(() =>
             {
@@ -73,14 +73,11 @@ namespace TwitterStreamerApi.Repositories
 
                     if (cancellationToken.IsCancellationRequested)
                     {
-                        userStream?.FilteredSteam.StopStream();
+                        userStream?.FilteredSteam?.StopStream();
                         userStream = null;
                     }
 
-                    System.Diagnostics.Debug.WriteLine("New tweet: " + args.Tweet.FullText);
-
                     _signalRcontext.Clients.Client(clientId).SendAsync("GetStream", "Linus", args.Tweet.FullText);
-
                 };
 
                 userStream.FilteredSteam.StartStreamMatchingAllConditionsAsync();
@@ -94,10 +91,10 @@ namespace TwitterStreamerApi.Repositories
             {
                 Thread.Sleep(2000);
                 System.Diagnostics.Debug.WriteLine("Cancelling the operation");
-                userStreams[0].ProcessCancellationTokenSource.Cancel();
+                var result = _taskManager.CancelTask(clientId);
             });
 
-            return $"this would start streamer for user { user.ScreenName } with credentials { credentials.AccessToken }";
+            return true;
         }
     }
 }

@@ -7,6 +7,6 @@ namespace TwitterStreamerApi.Repositories.Interfaces
 {
     public interface ITwitterStreamer
     {
-        Task<string> StartStreamer(string twitterId, string clientId, string[] tracks); 
+        Task<bool> StartStreamer(string twitterId, string clientId, string[] tracks); 
     }
 }

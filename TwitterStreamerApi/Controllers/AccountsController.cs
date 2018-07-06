@@ -9,7 +9,7 @@ using TwitterStreamerApi.Repositories.Interfaces;
 
 namespace TwitterStreamerApi.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/twitter/[controller]")]
     public class AccountsController : Controller
     {
         private readonly IUserDataManager _userDataManager;

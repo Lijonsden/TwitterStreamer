@@ -11,6 +11,6 @@ namespace TwitterStreamerApi.Models
         public string TwitterId { get; set; }
         public string ClientId { get; set; }
         public Tweetinvi.Streaming.IFilteredStream FilteredSteam { get; set; }
-        public CancellationTokenSource ProcessCancellationTokenSource { get; set; }
+        //public CancellationTokenSource ProcessCancellationTokenSource { get; set; }
     }
 }

@@ -32,17 +32,14 @@ namespace TwitterStreamerApi.Repositories
         {
             var user = await _userDataManager.GetUserData(twitterId);
 
-            if (user == null)
+            if (user == null || tracks == null)
                 return false;
 
             var credentials = await _userDataManager.GetUserCredentials(twitterId);
-            if (credentials == null/* || credentials.ValidUntil < DateTime.UtcNow*/)
+            if (credentials == null || credentials.ValidUntil < DateTime.UtcNow)
             {
+                //reroute for authentication 
             }
-
-            //TEMP
-            if (tracks == null)
-                tracks = new string[] { "Trump" };
 
             var userStream = new Models.TwitterUserStreams()
             {
@@ -54,13 +51,13 @@ namespace TwitterStreamerApi.Repositories
                     AccessTokenSecret = credentials.AccessTokenSecret,
                     ConsumerKey = _twitterConfigurations.ConsumerKey,
                     ConsumerSecret = _twitterConfigurations.ConsumerSecret,
-                }),
-                ProcessCancellationTokenSource = new CancellationTokenSource(),
+                })
             };
 
-            CancellationToken cancellationToken = userStream.ProcessCancellationTokenSource.Token;
+            var processCancellationTokenSource = new CancellationTokenSource();
+            CancellationToken cancellationToken = processCancellationTokenSource.Token;
 
-            if (!(await _taskManager.TryAddTask(clientId, userStream.ProcessCancellationTokenSource) == true))
+            if (!(await _taskManager.TryUpdateClientStream(clientId, processCancellationTokenSource) == true))
                 return false;
 
             foreach (var track in tracks)
@@ -70,7 +67,6 @@ namespace TwitterStreamerApi.Repositories
             {
                 userStream.FilteredSteam.MatchingTweetReceived += (sender, args) =>
                 {
-
                     if (cancellationToken.IsCancellationRequested)
                     {
                         userStream?.FilteredSteam?.StopStream();
@@ -86,15 +82,40 @@ namespace TwitterStreamerApi.Repositories
 
             userStreams.Add(userStream);
 
-            //Temp
-            var temp = Task.Run(() =>
-            {
-                Thread.Sleep(2000);
-                System.Diagnostics.Debug.WriteLine("Cancelling the operation");
-                var result = _taskManager.CancelTask(clientId);
-            });
-
             return true;
+        }
+
+        public async Task<bool> RemoveCLientStream(string clientId)
+        {
+            System.Diagnostics.Debug.WriteLine("Removing the client stream");
+            return await _taskManager.RemoveClientStream(clientId);
+        }
+
+        public async Task StopStreamer(string clientId)
+        {
+            System.Diagnostics.Debug.WriteLine("Stopping stream operation");
+
+            var stream = userStreams.SingleOrDefault(o => o.ClientId == clientId);
+
+            stream?.FilteredSteam?.StopStream();
+        }
+
+        public async Task PauseStreamer(string clientId)
+        {
+            System.Diagnostics.Debug.WriteLine("Pausing stream operation");
+
+            var stream = userStreams.SingleOrDefault(o => o.ClientId == clientId);
+
+            stream?.FilteredSteam?.PauseStream();
+        }
+
+        public async Task ResumeStreamer(string clientId)
+        {
+            System.Diagnostics.Debug.WriteLine("Resuming stream operation");
+
+            var stream = userStreams.SingleOrDefault(o => o.ClientId == clientId);
+
+            stream?.FilteredSteam?.ResumeStream();
         }
     }
 }

@@ -9,16 +9,21 @@ namespace TwitterStreamerApi.Repositories
 {
     public class TaskManager
     {
-        private static ConcurrentDictionary<string, CancellationTokenSource> tasks = new ConcurrentDictionary<string, CancellationTokenSource>();
+        private static ConcurrentDictionary<string, CancellationTokenSource> verifiedStreams = new ConcurrentDictionary<string, CancellationTokenSource>();
 
-        public async Task<bool> TryAddTask(string clientId, CancellationTokenSource tokenSource)
+        public async Task<bool> TryAddClientStream(string clientId, CancellationTokenSource tokenSource)
         {
-            return tasks.TryAdd(clientId, tokenSource);
+            return verifiedStreams.TryAdd(clientId, tokenSource);
         }
 
-        public async Task<bool> CancelTask(string clientId)
+        public async Task<bool> TryUpdateClientStream(string clientId, CancellationTokenSource tokenSource)
         {
-            var ct = tasks.TryRemove(clientId, out var cancellationToken);
+            return verifiedStreams.TryUpdate(clientId, tokenSource, null);
+        }
+
+        public async Task<bool> RemoveClientStream(string clientId)
+        {
+            var ct = verifiedStreams.TryRemove(clientId, out var cancellationToken);
             cancellationToken?.Cancel();
             cancellationToken?.Dispose();
 
